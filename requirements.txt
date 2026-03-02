@@ -1,0 +1,6 @@
+# Full environment (online install required)
+numpy>=1.26
+pandas>=2.2
+scikit-learn>=1.5
+matplotlib>=3.9
+pyspark>=3.5

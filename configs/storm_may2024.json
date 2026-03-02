@@ -1,0 +1,51 @@
+{
+  "project_name": "GNSS Scintillation and Positioning-Risk ML (May 2024 Storm)",
+  "storm_window": {
+    "start_utc": "2024-05-09T00:00:00Z",
+    "end_utc": "2024-05-13T00:00:00Z",
+    "peak_start_utc": "2024-05-10T12:00:00Z",
+    "peak_end_utc": "2024-05-11T23:59:00Z"
+  },
+  "cadence_minutes": 5,
+  "station_id": "P123",
+  "labeling": {
+    "mode": "fixed",
+    "vpl_threshold_m": 40.0,
+    "quiet_reference_end_utc": "2024-05-10T00:00:00Z",
+    "quiet_percentile": 95
+  },
+  "features": {
+    "lag_minutes": [10, 30, 60],
+    "rolling_windows_minutes": [30, 60],
+    "base": [
+      "bz",
+      "by",
+      "vsw",
+      "nsw",
+      "pdyn",
+      "sml",
+      "smu",
+      "sat_count",
+      "residual_rms",
+      "ephemeris_quality"
+    ]
+  },
+  "training": {
+    "train_fraction": 0.7,
+    "random_seed": 42,
+    "logistic": {
+      "learning_rate": 0.03,
+      "epochs": 600,
+      "l2": 0.0005
+    },
+    "forest_lite": {
+      "n_estimators": 140,
+      "max_features": 5,
+      "max_threshold_candidates": 12
+    }
+  },
+  "evaluation": {
+    "lead_minutes": [10, 30, 60],
+    "decision_threshold": 0.5
+  }
+}

@@ -1,0 +1,2 @@
+# Offline runtime for this repository's local pipeline.
+# No external dependencies are required.

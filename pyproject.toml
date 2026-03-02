@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gnss-scintillation-risk-ml"
+version = "0.1.0"
+description = "GNSS scintillation and positioning-risk ML framework for the May 2024 storm"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "HexaF Innovations" }
+]
+dependencies = []
+
+[project.scripts]
+gnss-risk-pipeline = "gnss_risk.pipeline:main"
+gnss-risk-spark = "gnss_risk.spark_job:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
