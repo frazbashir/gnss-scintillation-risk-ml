@@ -79,6 +79,28 @@ Each run writes:
 - `model_logistic.json`
 - `model_forest_lite.json`
 
+## GPU Training (Single Node)
+
+If your GDX VM has an NVIDIA GPU and CUDA driver:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -U pip xgboost
+```
+
+Generate the dataset and run GPU training:
+
+```bash
+PYTHONPATH=src python3 scripts/run_pipeline.py --config configs/storm_may2024.json --generate-synthetic
+bash scripts/run_gpu_training.sh outputs/latest/dataset_labeled.csv outputs/gpu
+```
+
+Expected outputs:
+
+- `outputs/gpu/metrics_gpu_xgboost.json`
+- `outputs/gpu/predictions_gpu_xgboost.csv`
+
 ## Scope Protection
 
 - No deep learning in this phase.
