@@ -259,6 +259,90 @@ def _plot_original_vs_predicted(
     return out1, out2
 
 
+def _parse_float_column(rows: List[Dict[str, str]], column: str) -> List[float]:
+    values: List[float] = []
+    for row in rows:
+        try:
+            values.append(float(row[column]))
+        except (KeyError, TypeError, ValueError):
+            values.append(float("nan"))
+    return values
+
+
+def _filter_rows_by_window(
+    rows: List[Dict[str, str]],
+    start_ts: datetime,
+    end_ts: datetime,
+) -> List[Dict[str, str]]:
+    filtered: List[Dict[str, str]] = []
+    for row in rows:
+        ts = _parse_ts(row["timestamp"])
+        if start_ts <= ts <= end_ts:
+            filtered.append(row)
+    return filtered
+
+
+def _plot_input_parameters_reference(
+    rows: List[Dict[str, str]],
+    output_path: Path,
+    title: str,
+) -> Path:
+    if not rows:
+        raise ValueError("Cannot plot input parameters from empty dataset")
+
+    timestamps = [_parse_ts(r["timestamp"]) for r in rows]
+
+    specs = [
+        ("bz", "Bz (nT)", "#1f2937"),
+        ("by", "By (nT)", "#374151"),
+        ("vsw", "Vsw (km/s)", "#1d4ed8"),
+        ("nsw", "Nsw", "#2563eb"),
+        ("pdyn", "Pdyn", "#0ea5e9"),
+        ("sml", "SML", "#b91c1c"),
+        ("smu", "SMU", "#dc2626"),
+        ("sat_count", "Satellite Count", "#15803d"),
+        ("residual_rms", "Residual RMS", "#16a34a"),
+        ("ephemeris_quality", "Ephemeris Quality", "#059669"),
+        ("vpl", "VPL (m)", "#9333ea"),
+        ("label", "VPL_exceed Label", "#7c3aed"),
+    ]
+    available_specs = [s for s in specs if s[0] in rows[0]]
+    if not available_specs:
+        raise ValueError("No expected input parameter columns found")
+
+    ncols = 2
+    nrows = (len(available_specs) + ncols - 1) // ncols
+    fig, axes = plt.subplots(nrows, ncols, figsize=(16, 2.8 * nrows), sharex=True, constrained_layout=True)
+    if hasattr(axes, "flatten"):
+        flat_axes = list(axes.flatten())  # type: ignore[union-attr]
+    else:
+        flat_axes = [axes]
+
+    for i, (column, label, color) in enumerate(available_specs):
+        ax = flat_axes[i]
+        values = _parse_float_column(rows, column)
+        if column == "label":
+            ax.step(timestamps, values, where="post", linewidth=1.5, color=color)
+            ax.set_ylim(-0.05, 1.05)
+        else:
+            ax.plot(timestamps, values, linewidth=1.2, color=color)
+        ax.set_title(label)
+        ax.grid(alpha=0.25)
+
+    for j in range(len(available_specs), len(flat_axes)):
+        flat_axes[j].axis("off")
+
+    for ax in flat_axes[:len(available_specs)]:
+        ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%m-%d %H:%M"))
+
+    fig.suptitle(title, fontsize=14)
+    fig.autofmt_xdate()
+    fig.savefig(output_path, dpi=170)
+    plt.close(fig)
+    return output_path
+
+
 def _write_metric_table(lead_metrics: Dict[int, Dict], output_dir: Path) -> Path:
     path = output_dir / "metrics_summary.csv"
     with path.open("w", encoding="utf-8", newline="") as f:
@@ -300,6 +384,7 @@ def generate_plots(run_dir: Path, output_dir: Path, gpu_predictions: Path | None
     output_dir.mkdir(parents=True, exist_ok=True)
 
     lead_metrics = _collect_lead_metrics(run_dir)
+    dataset_rows = _read_csv(run_dir / "dataset_labeled.csv")
     predictions = _read_csv(run_dir / "predictions_nowcast.csv")
 
     timestamps = [_parse_ts(r["timestamp"]) for r in predictions]
@@ -342,6 +427,27 @@ def generate_plots(run_dir: Path, output_dir: Path, gpu_predictions: Path | None
     comp1, comp2 = _plot_original_vs_predicted(timestamps, vpl, y_true, model_scores, output_dir)
     artifacts["comparison_vpl_prob"] = str(comp1)
     artifacts["comparison_labels"] = str(comp2)
+
+    artifacts["input_parameters_full"] = str(
+        _plot_input_parameters_reference(
+            dataset_rows,
+            output_dir / "input_parameters_reference_full_window.png",
+            title="Input Parameters Reference (Full Storm Window)",
+        )
+    )
+
+    pred_start = timestamps[0]
+    pred_end = timestamps[-1]
+    pred_window_rows = _filter_rows_by_window(dataset_rows, pred_start, pred_end)
+    if not pred_window_rows:
+        pred_window_rows = dataset_rows
+    artifacts["input_parameters_prediction_window"] = str(
+        _plot_input_parameters_reference(
+            pred_window_rows,
+            output_dir / "input_parameters_reference_prediction_window.png",
+            title="Input Parameters Reference (Prediction Window)",
+        )
+    )
 
     artifacts["metrics_summary_csv"] = str(_write_metric_table(lead_metrics, output_dir))
 

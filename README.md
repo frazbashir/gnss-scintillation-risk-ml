@@ -126,6 +126,8 @@ Generated plots (under `outputs/latest/plots` by default):
 - `nowcast_confusion_matrices.png`
 - `comparison_vpl_vs_predicted_probability.png`
 - `comparison_original_vs_predicted_labels.png`
+- `input_parameters_reference_full_window.png`
+- `input_parameters_reference_prediction_window.png`
 - `metrics_summary.csv`
 - `plot_manifest.json`
 
