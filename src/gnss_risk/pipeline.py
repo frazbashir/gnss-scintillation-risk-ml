@@ -191,8 +191,11 @@ def run_pipeline(
 ) -> Path:
     config = load_config(config_path)
 
+    output_root_path = Path(output_root)
+    output_root_path.mkdir(parents=True, exist_ok=True)
+
     run_id = datetime.now(timezone.utc).strftime("run_%Y%m%dT%H%M%SZ")
-    run_dir = Path(output_root) / run_id
+    run_dir = output_root_path / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
 
     selected_raw_dir = Path(raw_dir) if raw_dir else run_dir / "raw"
@@ -317,6 +320,15 @@ def run_pipeline(
             "threshold": threshold,
         },
     )
+
+    latest_link = output_root_path / "latest"
+    try:
+        if latest_link.is_symlink() or latest_link.exists():
+            latest_link.unlink()
+        latest_link.symlink_to(run_dir.name)
+    except OSError:
+        # Symlinks may be unavailable in some environments; keep pipeline success.
+        pass
 
     return run_dir
 
